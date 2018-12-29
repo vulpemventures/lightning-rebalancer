@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -ex
+
+PARENT_PATH=$(dirname $(cd $(dirname $0); pwd -P))
+
+pushd $PARENT_PATH
+mkdir -p build
+docker build --no-cache -t rebalancer-linux-arm:latest resources/linuxbuild
+docker run --name linux-build rebalancer-linux-arm:latest
+docker cp linux-build:/go/src/github.com/vulpemventures/lightning-rebalancer/build/rebalancer-linux-arm ./build
+docker rm linux-build
+docker rmi rebalancer-linux-arm:latest
+popd
