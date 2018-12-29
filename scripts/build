@@ -6,5 +6,5 @@ PARENT_PATH=$(dirname $(cd $(dirname $0); pwd -P))
 
 pushd $PARENT_PATH
 mkdir -p build
-GOOS=$1 GOARCH=$2 GOARM=7 go build -o build/rebalancer-$1-$2 ./rebalancer/
+GOOS=$1 GOARCH=$2 go build -o build/rebalancer-$1-$2 ./rebalancer/
 popd
