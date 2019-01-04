@@ -16,6 +16,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	pb "github.com/lightningnetwork/lnd/lnrpc"
 	//"github.com/lightningnetwork/lnd/macaroons"
@@ -208,8 +209,15 @@ func main() {
 	r.HandleFunc("/deposit", Deposit).Methods("POST")
 	r.HandleFunc("/withdraw", Withdraw).Methods("POST")
 
+	//CORS
+	router := handlers.CORS(
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}),
+		handlers.AllowedOrigins([]string{"*"}),
+	)(r)
+
 	// Bind to a port and pass our router in
 	log.Println("running rebalancer server on localhost:" + HTTPPort)
 	log.Println("looking for LND gRPC server on " + LNDHost + ":" + LNDPort)
-	log.Fatal(http.ListenAndServe(":"+HTTPPort, r))
+	log.Fatal(http.ListenAndServe(":"+HTTPPort, router))
 }
