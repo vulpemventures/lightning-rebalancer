@@ -1,8 +1,9 @@
-package main
+package util
 
 import (
 	"errors"
 	"io/ioutil"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/lightning-rebalancer/macaroons"
@@ -18,8 +19,20 @@ type Client struct {
 	conn *grpc.ClientConn
 }
 
-func getClientConnection(uri string) (*grpc.ClientConn, error) {
-	if !fileExists(TLSCertPath) || !fileExists(MACPath) {
+// FileExists reports whether the named file or directory exists.
+// This function is taken from https://github.com/btcsuite/btcd
+func FileExists(name string) bool {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
+}
+
+// GetClientConnection returns a LND conncetion instance given remote node URI
+func GetClientConnection(uri string) (*grpc.ClientConn, error) {
+	if !FileExists(TLSCertPath) || !FileExists(MACPath) {
 		return nil, errors.New("Missing either tls certficate or macaroon")
 	}
 

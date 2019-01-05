@@ -2,10 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
@@ -17,14 +14,17 @@ import (
 	pb "github.com/lightningnetwork/lnd/lnrpc"
 )
 
+var config *util.Config
+var lnURI string
+
 // Deposit Handler
 func Deposit(w http.ResponseWriter, r *http.Request) {
-	body := getRequestBody(r.Body)
-	defaultNet := util.getNetworkTypeByString(body["network"])
+	body := util.GetRequestBody(r.Body)
+	defaultNet := util.GetNetworkTypeByString(body["network"])
 	log.Println(defaultNet)
 	//invoice := body["invoice"]
 
-	conn, err := getClientConnection(LNDHost + ":" + LNDPort)
+	conn, err := util.GetClientConnection(lnURI)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -47,8 +47,8 @@ func Deposit(w http.ResponseWriter, r *http.Request) {
 
 // Withdraw Handler
 func Withdraw(w http.ResponseWriter, r *http.Request) {
-	body := getRequestBody(r.Body)
-	defaultNet := util.getNetworkTypeByString(body["network"])
+	body := util.GetRequestBody(r.Body)
+	defaultNet := util.GetNetworkTypeByString(body["network"])
 	addrString := body["address"]
 	amtSatoshi, err := strconv.ParseInt(body["amount"], 10, 64)
 	if err != nil {
@@ -67,7 +67,7 @@ func Withdraw(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	conn, err := getClientConnection(LNDHost + ":" + LNDPort)
+	conn, err := util.GetClientConnection(lnURI)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -91,7 +91,7 @@ func Withdraw(w http.ResponseWriter, r *http.Request) {
 
 //Ping func
 func Ping(w http.ResponseWriter, r *http.Request) {
-	conn, err := getClientConnection(LNDHost + ":" + LNDPort)
+	conn, err := util.GetClientConnection(lnURI)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -114,26 +114,9 @@ func Ping(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getRequestBody(body io.ReadCloser) map[string]string {
-	decoder := json.NewDecoder(body)
-	var decodedBody map[string]string
-	decoder.Decode(&decodedBody)
-
-	return decodedBody
-}
-
-// fileExists reports whether the named file or directory exists.
-// This function is taken from https://github.com/btcsuite/btcd
-func fileExists(name string) bool {
-	if _, err := os.Stat(name); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
-}
-
 func main() {
+	config = util.GetConfigFromEnv()
+	lnURI = config.LNDHost + ":" + config.LNDPort
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/ping", Ping).Methods("GET")
@@ -148,7 +131,7 @@ func main() {
 	)(r)
 
 	// Bind to a port and pass our router in
-	log.Println("running rebalancer server on localhost:" + HTTPPort)
-	log.Println("looking for LND gRPC server on " + LNDHost + ":" + LNDPort)
-	log.Fatal(http.ListenAndServe(":"+HTTPPort, router))
+	log.Println("running rebalancer server on localhost:" + config.HTTPPort)
+	log.Println("looking for LND gRPC server on " + lnURI)
+	log.Fatal(http.ListenAndServe(":"+config.HTTPPort, router))
 }

@@ -18,6 +18,7 @@ type Processor struct {
 func NewProcessor(network string) *Processor {
 	return &Processor{
 		[]*btcutil.Address{},
-		util.getNetworkTypeByString(network),
+		util.GetNetworkTypeByString(network),
+		make(map[string]*btcutil.Tx, 0),
 	}
 }
